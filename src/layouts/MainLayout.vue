@@ -44,7 +44,7 @@ export default {
       menus : [
         {
           title: "Eae men kk ",
-          to: "/toroute",
+          to: "/pagar",
           color: "red"
       },
       {
