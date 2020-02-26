@@ -6,10 +6,7 @@
         <q-btn dense flat round icon="menu" @click="left = !left" />
 
         <q-toolbar-title>
-          <q-avatar>
-            <img src="https://cdn.quasar.dev/logo/svg/quasar-logo.svg">
-          </q-avatar>
-          Title
+            <img src="~assets/logo-credisis.png" width="150px" height="60px" class="q-my-xs">
         </q-toolbar-title>
       </q-toolbar>
     </q-header>
@@ -41,7 +38,7 @@ export default {
   },
   data () {
     return {
-      left: true,
+      left: false,
       usuario: {
       },
       menus : [
