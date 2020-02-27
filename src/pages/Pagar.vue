@@ -7,17 +7,21 @@
       dense
       :data="data"
       :columns="columns"
-      row-key="name"
+      row-key="id"
       selection="single"
       :selected.sync="selected"
+      :loading="loading"
     >
+    <template v-slot:loading>
+        <q-inner-loading showing color="primary" />
+      </template>
     <template v-slot:top="props">
-        <div class="col-2 q-table__title">Contas a Pagar</div>
+        <div class="col-4 q-table__title">Contas a Pagar</div>
         <q-space/>
         <q-btn
           flat dense
           icon="playlist_add"
-          @click="dialogCreate = true"
+          @click="createConta"
           class="q-ml-md"
           color="positive"
           label="Nova"
@@ -25,69 +29,102 @@
         <q-btn
           flat dense
           icon="edit"
-          @click="dialogRead = true"
+          @click="readConta"
           class="q-ml-md"
           color="info"
           label="Visualizar"
-        />
+        >
+        <q-popup-proxy v-if="!selected[0]">
+        <q-banner>
+          <template v-slot:avatar>
+            <q-icon name="error_outline" color="warning" />
+          </template>
+          Por favor selecione uma conta para visualizar!
+        </q-banner>
+      </q-popup-proxy>
+      </q-btn>
         <q-btn
           flat dense
           icon="autorenew"
-          @click="dialogUpdate = true"
+          @click="updateConta"
           class="q-ml-md"
           color="warning"
           label="Alterar"
-        />
+        >
+        <q-popup-proxy v-if="!selected[0]">
+        <q-banner>
+          <template v-slot:avatar>
+            <q-icon name="error_outline" color="warning" />
+          </template>
+          Por favor selecione uma conta para editar!
+        </q-banner>
+      </q-popup-proxy>
+      </q-btn>
         <q-btn
           flat dense
           icon="remove"
-          @click="dialogRemove = true"
+          @click="removeConta"
           class="q-ml-md"
           color="negative"
           label="Remover"
-        />
+        >
+        <q-popup-proxy v-if="!selected[0]">
+        <q-banner>
+          <template v-slot:avatar>
+            <q-icon name="error_outline" color="warning" />
+          </template>
+          Por favor selecione uma conta antes para remover!
+        </q-banner>
+      </q-popup-proxy>
+      </q-btn>
         <q-btn
           flat round dense
           :icon="props.inFullscreen ? 'fullscreen_exit' : 'fullscreen'"
           @click="props.toggleFullscreen"
           class="q-ml-md"
-        />
-        <div class="q-mt-md">
-      Selected: {{ JSON.stringify(selected) }}
-    </div>
+        >
+        <q-popup-proxy v-if="!selected[0]">
+        <q-banner>
+          <template v-slot:avatar>
+            <q-icon name="error_outline" color="warning" />
+          </template>
+          Por favor selecione uma conta antes de visualizar
+        </q-banner>
+      </q-popup-proxy>
+      </q-btn>
     </template>
     </q-table>
-    <q-dialog v-model="dialogCreate" persistent @before-show="createConta" @before-hide="limpacampos">
+    <q-dialog v-model="dialog.show" persistent @before-hide="limpacampos">
       <q-card>
         <q-toolbar>
-          <q-toolbar-title><span class="text-weight-bold">Cadastrar</span> nova conta</q-toolbar-title>
+          <q-toolbar-title><span class="text-weight-bold">{{dialog.main}}</span> {{dialog.adjacent}}</q-toolbar-title>
           <q-btn flat dense icon="close" v-close-popup />
         </q-toolbar>
         <q-card-section>
-          <q-form class="row">
-            <q-input v-model="alvo.nome" class="fit q-ma-xs" outlined label="Nome"/>
+          <q-form class="row" @submit="enviarForm">
+            <q-input :readonly="dialog.readonly" v-model="alvo.nome" class="fit q-ma-xs" outlined label="Nome"/>
             <div class="row fit">
-              <q-input v-model="alvo.cpfcnpj" class="col q-ma-xs" outlined label="Cpf / Cnpj"/>
-              <q-input v-model="alvo.valor"  class="col q-ma-xs" outlined label="Valor R$" mask="R$ #####"/>
+              <q-input :readonly="dialog.readonly" v-model="alvo.valor" class="col q-ma-xs" outlined label="Valor R$" mask="R$ #####"/>
+              <q-input :readonly="dialog.readonly" v-model="alvo.valorpago"  class="col q-ma-xs" outlined label="Valor Pago R$" mask="R$ #####"/>
             </div>
             <div class="row fit">
               <div class="col q-ma-xs">
-                <q-input outlined v-model="alvo.datareceber" label="Data Receber" placeholder="2020/02/18" mask="date" :rules="['date']">
+                <q-input :readonly="dialog.readonly" outlined v-model="alvo.datavencimento" label="Data Vencimento" placeholder="2020/02/18" mask="date" :rules="['date']">
                   <template v-slot:append>
                     <q-icon name="event" class="cursor-pointer">
                       <q-popup-proxy ref="qDateProxy1" transition-show="scale" transition-hide="scale">
-                        <q-date v-model="alvo.datareceber" @input="() => $refs.qDateProxy1.hide()" />
+                        <q-date v-model="alvo.datavencimento" @input="() => $refs.qDateProxy1.hide()" />
                       </q-popup-proxy>
                     </q-icon>
                   </template>
                 </q-input>
               </div>
               <div class="col q-ma-xs">
-                <q-input outlined v-model="alvo.datarecebido" label="Data Recebido" placeholder="2020/02/18" mask="date" :rules="['date']">
+                <q-input :readonly="dialog.readonly" outlined v-model="alvo.datapagamento" label="Data Recebido" placeholder="2020/02/18" mask="date" :rules="['date']">
                   <template v-slot:append>
                     <q-icon name="event" class="cursor-pointer">
                       <q-popup-proxy ref="qDateProxy2" transition-show="scale" transition-hide="scale">
-                        <q-date v-model="alvo.datarecebido" @input="() => $refs.qDateProxy2.hide()" />
+                        <q-date v-model="alvo.datapagamento" @input="() => $refs.qDateProxy2.hide()" />
                       </q-popup-proxy>
                     </q-icon>
                   </template>
@@ -95,101 +132,12 @@
               </div>
             </div>
             <div class="row fit">
-              <q-select v-model="alvo.tipoconta" :options="alvo.tipodecontaopt" class="col q-ma-xs"  outlined label="Tipo de Conta"/>
-              <q-select v-model="alvo.situacao" :options="alvo.situacaoopt" class="col q-ma-xs" outlined label="Situacao"/>
+              <q-select readonly v-model="alvo.tipoconta" class="col q-ma-xs"   outlined label="Tipo de Conta"/>
+              <q-select :readonly="dialog.readonly" v-model="alvo.situacao" :options="alvo.situacaoopt" class="col q-ma-xs" outlined label="Situacao"/>
             </div>
-          <div class="row fit q-mt-md">
+          <div class="row fit q-mt-md"  v-if="dialog.tipo != 'read'">
             <q-btn dense color="negative" class="col q-ma-xs" label="Voltar" v-close-popup />
-            <q-btn dense color="primary" class="col q-ma-xs" label="Cadastrar" type="submit"/>
-          </div>
-          </q-form>
-        </q-card-section>
-      </q-card>
-    </q-dialog>
-    <q-dialog v-model="dialogRead" persistent @before-show="readConta" @before-hide="limpacampos">
-      <q-card>
-        <q-toolbar>
-          <q-toolbar-title><span class="text-weight-bold">Visualizar</span> conta</q-toolbar-title>
-          <q-btn flat dense icon="close" v-close-popup />
-        </q-toolbar>
-        <q-card-section>
-          <q-form class="row">
-            <q-input readonly v-model="alvo.nome" class="fit q-ma-xs" outlined label="Nome"/>
-            <div class="row fit">
-              <q-input readonly v-model="alvo.cpfcnpj" class="col q-ma-xs" outlined label="Cpf / Cnpj"/>
-              <q-input readonly v-model="alvo.valor"  class="col q-ma-xs" outlined label="Valor R$" mask="R$ #####"/>
-            </div>
-            <div class="row fit">
-              <div class="col q-ma-xs">
-                <q-input readonly outlined v-model="alvo.datareceber" mask="date" :rules="['date']">
-                  <template v-slot:append>
-                    <q-icon name="event" class="cursor-pointer">
-
-                    </q-icon>
-                  </template>
-                </q-input>
-              </div>
-              <div class="col q-ma-xs">
-                <q-input readonly outlined v-model="alvo.datarecebido" mask="date" :rules="['date']">
-                  <template v-slot:append>
-                    <q-icon name="event" class="cursor-pointer">
-                    </q-icon>
-                  </template>
-                </q-input>
-              </div>
-            </div>
-            <div class="row fit">
-              <q-select readonly v-model="alvo.tipoconta" :options="alvo.tipodecontaopt" class="col q-ma-xs"  outlined label="Tipo de Conta"/>
-              <q-select readonly v-model="alvo.situacao" :options="alvo.situacaoopt" class="col q-ma-xs" outlined label="Situacao"/>
-            </div>
-          </q-form>
-        </q-card-section>
-      </q-card>
-    </q-dialog>
-    <q-dialog v-model="dialogUpdate" persistent @before-show="updateConta">
-      <q-card>
-        <q-toolbar>
-          <q-toolbar-title><span class="text-weight-bold">Alterar</span> uma conta</q-toolbar-title>
-          <q-btn flat dense icon="close" v-close-popup @click="limpacampos" />
-        </q-toolbar>
-        <q-card-section>
-          <q-form class="row">
-            <q-input v-model="alvo.nome" class="fit q-ma-xs" outlined label="Nome"/>
-            <div class="row fit">
-              <q-input v-model="alvo.cpfcnpj" class="col q-ma-xs" outlined label="Cpf / Cnpj"/>
-              <q-input v-model="alvo.valor"  class="col q-ma-xs" outlined label="Valor R$" mask="R$ #####"/>
-            </div>
-            <div class="row fit">
-              <div class="col q-ma-xs">
-                <q-input outlined v-model="alvo.datareceber" mask="date" :rules="['date']">
-                  <template v-slot:append>
-                    <q-icon name="event" class="cursor-pointer">
-                      <q-popup-proxy ref="qDateProxy3" transition-show="scale" transition-hide="scale">
-                        <q-date v-model="alvo.datareceber" @input="() => $refs.qDateProxy3.hide()" />
-                      </q-popup-proxy>
-                    </q-icon>
-                  </template>
-                </q-input>
-              </div>
-              <div class="col q-ma-xs">
-                <q-input outlined v-model="alvo.datarecebido" mask="date" :rules="['date']">
-                  <template v-slot:append>
-                    <q-icon name="event" class="cursor-pointer">
-                      <q-popup-proxy ref="qDateProxy4" transition-show="scale" transition-hide="scale">
-                        <q-date v-model="alvo.datarecebido" @input="() => $refs.qDateProxy4.hide()" />
-                      </q-popup-proxy>
-                    </q-icon>
-                  </template>
-                </q-input>
-              </div>
-            </div>
-            <div class="row fit">
-              <q-select v-model="alvo.tipoconta" :options="alvo.tipodecontaopt" class="col q-ma-xs"  outlined label="Tipo de Conta"/>
-              <q-select v-model="alvo.situacao" :options="alvo.situacaoopt" class="col q-ma-xs" outlined label="Situacao"/>
-            </div>
-          <div class="row fit q-mt-md">
-            <q-btn dense color="negative" class="col q-ma-xs" label="Voltar" v-close-popup @click="limpacampos"/>
-            <q-btn dense color="primary" class="col q-ma-xs" label="Salvar" type="submit"/>
+            <q-btn dense color="primary" class="col q-ma-xs" :label="dialog.main" type="submit"/>
           </div>
           </q-form>
         </q-card-section>
@@ -210,15 +158,8 @@ export default {
     return {
       selected: [],
       alvo: {
-        nome: '',
-        cpfcnpj: '',
-        tipoconta: '',
-        tipodecontaopt: [],
-        valor: '',
-        datareceber: '',
-        datarecebido: '',
-        situacao: '',
-        situacaoopt: ['Pendente', 'Recebido', 'Recebido em atraso'],
+        tipoconta: 'Pagar',
+        situacaoopt: ['Pendente', 'Pago', 'Pago adiantado', 'Pago em atraso']
       },
       columns: [
         { name: 'id', align: 'left', label: 'ID', field: 'id', sortable: true },
@@ -226,62 +167,127 @@ export default {
         { name: 'nome', align: 'left', label: 'Nome', field: 'nome', sortable: true },
         { name: 'tipoconta', align: 'left', label: 'Tipo de Conta', field: 'tipoconta', sortable: true },
         { name: 'valor', align: 'left', label: 'Valor (R$)', field: 'valor', sortable: true },
-        { name: 'datareceber', align: 'left', label: 'Data à Receber', field: 'datareceber', sortable: true },
-        { name: 'datarecebido', align: 'left', label: 'Data Recebido', field: 'datarecebido', sortable: true },
+        { name: 'datavencimento', align: 'left', label: 'Data Vencimento', field: 'datavencimento', sortable: true },
+        { name: 'datapagamento', align: 'left', label: 'Data do Pagamento', field: 'datapagamento', sortable: true },
         { name: 'situacao', align: 'left', label: 'Situação', field: 'situacao', sortable: true },
       ],
       data: [
         {
-          name: 'KitKat',
           id: 518,
-          cpfcnpj: 26.0,
-          nome: 65,
-          tipoconta: 7,
-          valor: "54,00",
-          datareceber: '12%',
-          datarecebido: '6%',
-          situacao: 'PAGO'
-        }
+          cpfcnpj: '904.151.832-00',
+          nome: 'Diego Correia de Brito',
+          tipoconta: 'Pagar',
+          valor: '54,00',
+          valorpago: '54,00',
+          datavencimento: '2020/02/15',
+          datapagamento: '2020/02/15',
+          situacao: 'Pago'
+        },
+        {
+          id: 517,
+          cpfcnpj: '904.151.832-00',
+          nome: 'Diego Correia de Brito',
+          tipoconta: 'Pagar',
+          valor: '54,00',
+          valorpago: '54,00',
+          datavencimento: '2020/02/15',
+          datapagamento: '2020/02/15',
+          situacao: 'Pago'
+        },
+        {
+          id: 519,
+          cpfcnpj: '904.151.832-00',
+          nome: 'Diego Correia de Brito',
+          tipoconta: 'Pagar',
+          valor: '54,00',
+          valorpago: '54,00',
+          datavencimento: '2020/02/15',
+          datapagamento: '2020/02/15',
+          situacao: 'Pago'
+        },
+        {
+          id: 516,
+          cpfcnpj: '904.151.832-00',
+          nome: 'Diego Correia de Brito',
+          tipoconta: 'Pagar',
+          valor: '54,00',
+          valorpago: '54,00',
+          datavencimento: '2020/02/15',
+          datapagamento: '2020/02/15',
+          situacao: 'Pago'
+        },
+        {
+          id: 518,
+          cpfcnpj: '904.151.832-00',
+          nome: 'Diego Correia de Brito',
+          tipoconta: 'Pagar',
+          valor: '54,00',
+          valorpago: '54,00',
+          datavencimento: '2020/02/15',
+          datapagamento: '2020/02/15',
+          situacao: 'Pago'
+        },
       ],
-      dialogCreate: false,
-      dialogRead: false,
-      dialogUpdate: false,
-      dialogRemove: false,
+      dialog: {
+        main: '',
+        adjacent: '',
+        tipo: '',
+        readonly: false,
+        show: false
+      }
     }
   },
   methods: {
     createConta () {
-      this.limpacampos()
+      this.limpacampos();
+      this.dialog.main = 'Cadastrar';
+      this.dialog.adjacent = ' uma nova conta';
+      this.dialog.tipo = 'create';
+      this.dialog.readonly = false;
+      this.dialog.show = true;
     },
     readConta () {
-      if(this.selected.id != 0){
-        let target = {...this.selected[0]}
-        this.alvo = target
+      if (this.selected[0]) {
+        this.dialog.show = true;
+        this.dialog.main = 'Visualizar';
+        this.dialog.adjacent = ' conta';
+        this.dialog.tipo = 'read';
+        this.dialog.readonly = true;
+        let target = { ...this.selected[0] }
+        this.alvo = target;
       }
     },
     updateConta () {
-      if(this.selected.id != 0){
-        let target = {...this.selected[0]}
+      if (this.selected[0]) {
+        this.dialog.show = true;
+        this.dialog.main = 'Atualizar';
+        this.dialog.adjacent = ' uma conta';
+        this.dialog.tipo = 'update';
+        this.dialog.readonly = false;
+        this.dialog.show = true;
+        let target = { ...this.selected[0] }
         this.alvo = target
+        this.alvo.tipoconta ='Pagar',
+        this.alvo.situacaoopt = ['Pendente', 'Pago', 'Pago adiantado', 'Pago em atraso']
       }
-     },
+    },
     removeConta () {
-      if(this.selected.id != 0){
-        let target = {...this.selected[0]}
+      if (this.selected[0]) {
+        let target = { ...this.selected[0] }
         this.alvo = target
       }
-     },
+    },
     limpacampos () {
-      this.alvo.situacaoopt = ['Pendente', 'Recebido', 'Recebido em atraso'],
+      this.alvo.tipoconta = 'Pagar'
       this.alvo.nome = ''
       this.alvo.cpfcnpj = ''
-      this.alvo.tipoconta = ''
-      this.alvo.tipodecontaopt = ['GET TIPO DE CONTAS']
       this.alvo.valor = ''
-      this.alvo.datareceber = ''
-      this.alvo.datarecebido = ''
+      this.alvo.valorpago = ''
+      this.alvo.datapagamento = ''
+      this.alvo.datavencimento = ''
       this.alvo.situacao = ''
-    }
+    },
+    enviarForm () { }
   },
 }
 </script>

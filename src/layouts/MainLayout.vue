@@ -1,5 +1,5 @@
 <template>
-  <q-layout view="lHh LpR lFf">
+  <q-layout view="hHh LpR lFf">
 
     <q-header elevated class="bg-primary text-white">
       <q-toolbar>
@@ -49,7 +49,7 @@ export default {
       },
       {
           title: "Eae men kk ",
-          to: "/toroute",
+          to: "/receber",
           color: "blue"
       },
       {

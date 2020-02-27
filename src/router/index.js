@@ -19,7 +19,7 @@ export default function (/* { store, ssrContext } */) {
       component: () => import('layouts/MainLayout.vue'),
       children: [
         { path: 'pagar', component: () => import('pages/Pagar.vue') },
-        { path: 'pagar', component: () => import('pages/Pagar.vue') },
+        { path: 'receber', component: () => import('pages/Receber.vue') },
         { path: '', component: () => import('pages/Index.vue') }
       ],
     }
