@@ -90,14 +90,14 @@
       </q-btn>
     </template>
     </q-table>
-    <q-dialog v-model="dialogCreate" persistent @before-show="createConta" @before-hide="limpacampos">
+    <q-dialog v-model="dialog.show" persistent @before-hide="limpacampos">
       <q-card>
         <q-toolbar>
-          <q-toolbar-title><span class="text-weight-bold">Cadastrar</span> nova conta</q-toolbar-title>
+          <q-toolbar-title><span class="text-weight-bold">{{dialog.main}}</span> {{dialog.adjacent}}</q-toolbar-title>
           <q-btn flat dense icon="close" v-close-popup />
         </q-toolbar>
         <q-card-section>
-          <q-form class="row">
+          <q-form class="row" @submit="enviarForm">
             <q-input v-model="alvo.nome" class="fit q-ma-xs" outlined label="Nome"/>
             <div class="row fit">
               <q-input v-model="alvo.cpfcnpj" class="col q-ma-xs" outlined label="Cpf / Cnpj"/>
@@ -105,111 +105,22 @@
             </div>
             <div class="row fit">
               <div class="col q-ma-xs">
-                <q-input outlined v-model="alvo.datareceber" label="Data Receber" placeholder="2020/02/18" mask="date" :rules="['date']">
-                  <template v-slot:append>
-                    <q-icon name="event" class="cursor-pointer">
-                      <q-popup-proxy ref="qDateProxy1" transition-show="scale" transition-hide="scale">
-                        <q-date v-model="alvo.datareceber" @input="() => $refs.qDateProxy1.hide()" />
-                      </q-popup-proxy>
-                    </q-icon>
-                  </template>
-                </q-input>
-              </div>
-              <div class="col q-ma-xs">
-                <q-input outlined v-model="alvo.datarecebido" label="Data Recebido" placeholder="2020/02/18" mask="date" :rules="['date']">
-                  <template v-slot:append>
-                    <q-icon name="event" class="cursor-pointer">
-                      <q-popup-proxy ref="qDateProxy2" transition-show="scale" transition-hide="scale">
-                        <q-date v-model="alvo.datarecebido" @input="() => $refs.qDateProxy2.hide()" />
-                      </q-popup-proxy>
-                    </q-icon>
-                  </template>
-                </q-input>
-              </div>
-            </div>
-            <div class="row fit">
-              <q-select readonly v-model="alvo.tipoconta" class="col q-ma-xs"   outlined label="Tipo de Conta"/>
-              <q-select v-model="alvo.situacao" :options="alvo.situacaoopt" class="col q-ma-xs" outlined label="Situacao"/>
-            </div>
-          <div class="row fit q-mt-md">
-            <q-btn dense color="negative" class="col q-ma-xs" label="Voltar" v-close-popup />
-            <q-btn dense color="primary" class="col q-ma-xs" label="Cadastrar" type="submit"/>
-          </div>
-          </q-form>
-        </q-card-section>
-      </q-card>
-    </q-dialog>
-    <q-dialog v-model="dialogRead" persistent @before-show="readConta" @before-hide="limpacampos">
-      <q-card>
-        <q-toolbar>
-          <q-toolbar-title><span class="text-weight-bold">Visualizar</span> conta</q-toolbar-title>
-          <q-btn flat dense icon="close" v-close-popup />
-        </q-toolbar>
-        <q-card-section>
-          <q-form class="row">
-            <q-input readonly v-model="alvo.nome" class="fit q-ma-xs" outlined label="Nome"/>
-            <div class="row fit">
-              <q-input readonly v-model="alvo.cpfcnpj" class="col q-ma-xs" outlined label="Cpf / Cnpj"/>
-              <q-input readonly v-model="alvo.valor"  class="col q-ma-xs" outlined label="Valor R$" mask="R$ #####"/>
-            </div>
-            <div class="row fit">
-              <div class="col q-ma-xs">
-                <q-input readonly outlined v-model="alvo.datareceber" mask="date" :rules="['date']">
-                  <template v-slot:append>
-                    <q-icon name="event" class="cursor-pointer">
-
-                    </q-icon>
-                  </template>
-                </q-input>
-              </div>
-              <div class="col q-ma-xs">
-                <q-input readonly outlined v-model="alvo.datarecebido" mask="date" :rules="['date']">
-                  <template v-slot:append>
-                    <q-icon name="event" class="cursor-pointer">
-                    </q-icon>
-                  </template>
-                </q-input>
-              </div>
-            </div>
-            <div class="row fit">
-              <q-select readonly v-model="alvo.tipoconta" class="col q-ma-xs"  outlined label="Tipo de Conta"/>
-              <q-select readonly v-model="alvo.situacao" :options="alvo.situacaoopt" class="col q-ma-xs" outlined label="Situacao"/>
-            </div>
-          </q-form>
-        </q-card-section>
-      </q-card>
-    </q-dialog>
-    <q-dialog v-model="dialogUpdate" persistent @before-show="updateConta">
-      <q-card>
-        <q-toolbar>
-          <q-toolbar-title><span class="text-weight-bold">Alterar</span> uma conta</q-toolbar-title>
-          <q-btn flat dense icon="close" v-close-popup @click="limpacampos" />
-        </q-toolbar>
-        <q-card-section>
-          <q-form class="row">
-            <q-input v-model="alvo.nome" class="fit q-ma-xs" outlined label="Nome"/>
-            <div class="row fit">
-              <q-input v-model="alvo.cpfcnpj" class="col q-ma-xs" outlined label="Cpf / Cnpj"/>
-              <q-input v-model="alvo.valor"  class="col q-ma-xs" outlined label="Valor R$" mask="R$ #####"/>
-            </div>
-            <div class="row fit">
-              <div class="col q-ma-xs">
-                <q-input outlined v-model="alvo.datareceber" mask="date" :rules="['date']">
+                <q-input outlined v-model="alvo.data_receber" mask="date" :rules="['date']">
                   <template v-slot:append>
                     <q-icon name="event" class="cursor-pointer">
                       <q-popup-proxy ref="qDateProxy3" transition-show="scale" transition-hide="scale">
-                        <q-date v-model="alvo.datareceber" @input="() => $refs.qDateProxy3.hide()" />
+                        <q-date v-model="alvo.data_receber" @input="() => $refs.qDateProxy3.hide()" />
                       </q-popup-proxy>
                     </q-icon>
                   </template>
                 </q-input>
               </div>
               <div class="col q-ma-xs">
-                <q-input outlined v-model="alvo.datarecebido" mask="date" :rules="['date']">
+                <q-input outlined v-model="alvo.data_recebido" mask="date" :rules="['date']">
                   <template v-slot:append>
                     <q-icon name="event" class="cursor-pointer">
                       <q-popup-proxy ref="qDateProxy4" transition-show="scale" transition-hide="scale">
-                        <q-date v-model="alvo.datarecebido" @input="() => $refs.qDateProxy4.hide()" />
+                        <q-date v-model="alvo.data_recebido" @input="() => $refs.qDateProxy4.hide()" />
                       </q-popup-proxy>
                     </q-icon>
                   </template>
@@ -239,6 +150,9 @@ export default {
       return new Date().toString();
     }
   },
+  created () {
+    this.getData();
+  },
   data () {
     return {
       selected: [],
@@ -256,19 +170,7 @@ export default {
         { name: 'datapagamento', align: 'left', label: 'Data do Pagamento', field: 'datapagamento', sortable: true },
         { name: 'situacao', align: 'left', label: 'Situação', field: 'situacao', sortable: true },
       ],
-      data: [
-        {
-          id: 518,
-          cpfcnpj: '904.151.832-00',
-          nome: 'Diego Correia de Brito',
-          tipoconta: 'Pagar',
-          valor: '54,00',
-          valorpago: '54,00',
-          datavencimento: '2020/02/15',
-          datapagamento: '2020/02/15',
-          situacao: 'Pago'
-        }
-      ],
+      data: [],
       dialogCreate: false,
       dialogRead: false,
       dialogUpdate: false,
@@ -276,6 +178,33 @@ export default {
     }
   },
   methods: {
+
+    createData (data) {
+      let self = this;
+      Axios.post("http://localhost:9000/receber", data).then(response => {
+        console.log(response)
+        self.data = response.data
+      })
+    },
+    getData () {
+      let self = this;
+      Axios.get("http://localhost:9000/receber").then(response => {
+        console.log(response)
+        self.data = response.data
+      })
+    },
+    updateData (data) {
+      let self = this;
+      Axios.put("http://localhost:9000/receber", data).then(response => {
+        console.log(response)
+      })
+    },
+    removeData (data) {
+      let self = this;
+      Axios.delete("http://localhost:9000/receber", data).then(response => {
+        console.log(response)
+      })
+    },
     createConta () {
       this.limpacampos()
     },

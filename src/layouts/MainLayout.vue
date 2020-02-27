@@ -6,7 +6,7 @@
         <q-btn dense flat round icon="menu" @click="left = !left" />
 
         <q-toolbar-title>
-            <img src="~assets/logo-credisis.png" width="150px" height="60px" class="q-my-xs">
+            <!-- <img src="~assets/logo-credisis.png" width="150px" height="60px" class="q-my-xs"> -->
         </q-toolbar-title>
       </q-toolbar>
     </q-header>
@@ -43,19 +43,14 @@ export default {
       },
       menus : [
         {
-          title: "Eae men kk ",
+          title: "Contas a Pagar ",
           to: "/pagar",
           color: "red"
       },
       {
-          title: "Eae men kk ",
+          title: "Contas a Receber ",
           to: "/receber",
           color: "blue"
-      },
-      {
-          title: "Eae men kk ",
-          to: "/toroute",
-          color: "green"
       },
       ]
     }
