@@ -2,25 +2,21 @@
 
 A White Horse project app
 
-## Install the dependencies
+São necessários para rodar o projeto:
+NodeJS : https://nodejs.org/
+Quasar Framework : https://quasar.dev/
+
+## Instalar dependências
 ```bash
 yarn
 ```
 
-### Start the app in development mode (hot-code reloading, error reporting, etc.)
+### Iniciar servidor em modo develop
 ```bash
 quasar dev
 ```
 
-### Lint the files
-```bash
-yarn run lint
-```
-
-### Build the app for production
+### Build do webpack
 ```bash
 quasar build
 ```
-
-### Customize the configuration
-See [Configuring quasar.conf.js](https://quasar.dev/quasar-cli/quasar-conf-js).
